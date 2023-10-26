@@ -1,5 +1,6 @@
+<!-- +page.svelte -->
 <script>
-	import { messagesStore, usernameStore, sendMessage } from '$lib/messagesStore.js';
+	import { messagesStore, usernameStore, connectedUsersStore, sendMessage, fetchUsername } from '$lib/messagesStore.js';
 	import { onMount } from 'svelte';
 
 	let newMessage = '';
@@ -17,6 +18,7 @@
 		if (username.trim() !== '') {
 			localStorage.setItem('username', username); // Save to local storage
 			usernameStore.set(username);
+			fetchUsername(); // Update the backend
 			hasUsername = true;
 		}
 	}
@@ -25,18 +27,19 @@
 		if (username.trim() !== '') {
 			localStorage.setItem('username', username); // Save to local storage
 			usernameStore.set(username);
+			fetchUsername(); // Update the backend
 			showUsernameForm = false; // Hide the username form
 		}
 	}
 
 	onMount(() => {
 		const savedUsername = localStorage.getItem('username');
-		if (savedUsername) {
-			username = savedUsername;
-			usernameStore.set(username);
-			hasUsername = true;
-		}
-	});
+        if (savedUsername) {
+            username = savedUsername;
+            usernameStore.set(username);
+            hasUsername = true;
+        }
+    });
 </script>
 
 <div class="flex flex-col h-screen bg-gray-100">
@@ -72,6 +75,20 @@
 					Change Username
 				</button>
 			</div>
+		</div>
+		<!-- Connected Users List -->
+		<div class="p-4 bg-white rounded-lg shadow-lg mt-4">
+			<h2 class="text-lg font-semibold mb-2 text-blue-600">Connected Users</h2>
+			<ul class="list-inside list-disc">
+				{#each $connectedUsersStore as user}
+					<li class="text-sm mb-1">
+						<span class="font-medium text-gray-700">
+							{user}
+							{@html user === username ? '<span class="text-green-500">(me)</span>' : ''}
+						</span>
+					</li>
+				{/each}
+			</ul>
 		</div>
 
 		{#if showUsernameForm}

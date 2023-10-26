@@ -1,3 +1,4 @@
+<!-- +layout.svelte -->
 <script>
 	import '../app.postcss';
 	import { browser } from '$app/environment';
