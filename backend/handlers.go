@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
@@ -27,7 +28,8 @@ var (
 	ctx = context.Background()
 )
 
-var mutex = &sync.Mutex{}                        // Variable for synchronization
+var mutex = &sync.Mutex{}
+var clientMutex = &sync.Mutex{}                  // Variable for synchronization
 var clients = make(map[*websocket.Conn]bool)     // connected clients
 var usernames = make(map[*websocket.Conn]string) // track usernames
 
@@ -79,7 +81,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if clientSentUsername != "" {
 		username = clientSentUsername
 		log.Println("Client sent username:", username) // Debug line
-		log.Println("Client IP:", clientIP)           // Debug line
+		log.Println("Client IP:", clientIP)            // Debug line
 		err = updateUsernameInRedis(clientIP, username)
 		if err != nil {
 			log.Println("Error updating username in Redis:", err)
@@ -114,10 +116,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Add the message type
+		// Add the message type and generate server-side timestamp
 		chatMessage.Type = "message"
+		chatMessage.Timestamp = time.Now()
 
-		// Re-encode the message with the added type field
+		// Re-encode the message with the added fields
 		updatedMsg, err := json.Marshal(chatMessage)
 		if err != nil {
 			log.Println("Error marshalling updated message:", err)
@@ -154,7 +157,11 @@ func broadcastUserList() {
 	mutex.Unlock()
 	userListJSON, _ := json.Marshal(map[string]interface{}{"type": "users", "users": userList})
 	for client := range clients {
-		client.WriteMessage(websocket.TextMessage, userListJSON)
+		clientMutex.Lock()
+		if err := client.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
+			log.Println("Error writing to client:", err)
+		}
+		clientMutex.Unlock()
 	}
 }
 
