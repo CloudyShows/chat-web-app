@@ -25,6 +25,10 @@ func (s *Server) handleIncomingMessages(conn *websocket.Conn) {
         messageType, msg, err := conn.ReadMessage()
         if err != nil {
             log.Println("Error reading message:", err)
+            s.mutex.Lock()
+            delete(s.clients, conn)
+            delete(s.usernames, conn)
+            s.mutex.Unlock()
             return
         }
         s.processMessage(conn, messageType, msg)

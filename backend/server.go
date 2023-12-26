@@ -21,7 +21,7 @@ func NewServer() *Server {
             },
         },
         rdb: redis.NewClient(&redis.Options{
-            Addr: "localhost:6379", // Redis server address
+            Addr: "redis:6379", // Redis container address
         }),
         ctx: context.Background(),
         clients: make(map[*websocket.Conn]bool),

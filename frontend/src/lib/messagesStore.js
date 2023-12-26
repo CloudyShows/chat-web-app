@@ -33,6 +33,11 @@ export function initializeWebSocket() {
 	});
 }
 
+export function disconnectWebSocket() {
+    if (ws) {
+        ws.close();
+    }
+}
 
 export function fetchUsername() {
     const savedUsername = localStorage.getItem('username');
