@@ -1,4 +1,4 @@
-FROM node:21-alpine3.17 AS build
+FROM node:21-alpine3.18 AS build
 WORKDIR /app
 
 COPY ./frontend/package*.json ./
@@ -9,15 +9,14 @@ COPY ./frontend .
 
 RUN npm run build
 
-FROM node:21-alpine3.17
+FROM node:21-alpine3.18
 WORKDIR /app
 
 COPY --from=build /app/package*.json ./
 COPY --from=build /app/build ./build
-COPY --from=build /app/.svelte-kit ./.svelte-kit
 
-RUN npm install
+RUN npm install --production
 
 EXPOSE 3000
 
-CMD ["node", "./build"]
+CMD ["npm", "start"]

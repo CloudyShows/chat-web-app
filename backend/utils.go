@@ -1,2 +1,0 @@
-// utils.go
-package main

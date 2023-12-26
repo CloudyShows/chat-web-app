@@ -9,23 +9,23 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes  # Enables AOF persistence
 
-  # backend:
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile.backend
-  #   ports:
-  #     - "3001:3001"
-  #   depends_on:
-  #     - redis
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile.backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - redis
 
-  # frontend:
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile.frontend
-  #   ports:
-  #     - "3000:3000"
-  #   depends_on:
-  #     - backend
+  frontend:
+    build:
+      context: ./
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
 
 volumes:
   redis-data:
