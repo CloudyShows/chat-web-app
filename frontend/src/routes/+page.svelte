@@ -1,6 +1,5 @@
 <!-- +page.svelte -->
 <script>
-	// TODO fix bug on page refresh messages appear at the top of the page
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import {
