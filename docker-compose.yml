@@ -1,13 +1,12 @@
-version: '3'
+version: "3"
 services:
-
   redis:
     image: "redis:7.2.2-alpine"
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
-    command: redis-server --appendonly yes  # Enables AOF persistence
+    command: redis-server --appendonly yes # Enables AOF persistence
 
   backend:
     build:
@@ -15,15 +14,21 @@ services:
       dockerfile: Dockerfile.backend
     ports:
       - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - ./backend/.air.toml:/app/.air.toml
     depends_on:
       - redis
+
 
   frontend:
     build:
       context: ./
       dockerfile: Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "3000:5173"
+    volumes:
+      - ./frontend:/app
     depends_on:
       - backend
 

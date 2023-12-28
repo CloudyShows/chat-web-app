@@ -1,0 +1,15 @@
+# .air.toml
+# Config for Air live reload
+
+[[watch]]
+name = '.'
+include = ['.go']
+exclude = ['tmp', 'vendor', 'frontend']
+
+[[build]]
+bin = 'tmp/main'
+cmd = 'go build -o ./tmp/main .'
+delay = 1000
+
+[[command]]
+command = "tmp/main"
