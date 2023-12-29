@@ -24,7 +24,7 @@ func NewServer() *Server {
             Addr: "redis:6379", // Redis container address
         }),
         ctx: context.Background(),
-        clients: make(map[*websocket.Conn]bool),
+        clients: make(map[*websocket.Conn]chan struct{}),
         usernames: make(map[*websocket.Conn]string),
     }
 }

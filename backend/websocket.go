@@ -1,3 +1,4 @@
+// websocket.go
 package main
 
 import (
@@ -10,78 +11,111 @@ import (
 )
 
 func (s *Server) handleNewClient(conn *websocket.Conn, r *http.Request) {
-    s.mutex.Lock()
-    s.clients[conn] = true
-    s.mutex.Unlock()
+    closeChan := make(chan struct{})
+    s.registerClient(conn, closeChan)
 
-    log.Println("Client connected:", conn.RemoteAddr())
-    s.sendChatHistory(conn)
-    s.updateUsername(conn, r)
+    // Start a goroutine to handle incoming messages
+    go s.handleIncomingMessages(conn, closeChan)
+
+	log.Println("Client connected:", conn.RemoteAddr())
+	s.sendChatHistory(conn)
+
+	clientIP := getClientIP(r)
+	username, _ := s.getUsernameFromRedis(clientIP)
+	s.updateClientUsername(clientIP, username)
+
+	s.broadcastUserList()
+}
+
+func (s *Server) registerClient(conn *websocket.Conn, closeChan chan struct{}) {
+    s.clientMutex.Lock()
+    defer s.clientMutex.Unlock()
+
+    s.clients[conn] = closeChan
+}
+
+func (s *Server) removeClient(conn *websocket.Conn) {
+    s.clientMutex.Lock()
+    defer s.clientMutex.Unlock()
+
+    delete(s.clients, conn)
+    delete(s.usernames, conn)
+
     s.broadcastUserList()
 }
 
-func (s *Server) handleIncomingMessages(conn *websocket.Conn) {
+func (s *Server) handleIncomingMessages(conn *websocket.Conn, closeChan chan struct{}) {
+    defer close(closeChan) // Signal that this connection is closing
+
     for {
-        messageType, msg, err := conn.ReadMessage()
+        _, msg, err := conn.ReadMessage()
         if err != nil {
             log.Println("Error reading message:", err)
-            s.mutex.Lock()
-            delete(s.clients, conn)
-            delete(s.usernames, conn)
-            s.mutex.Unlock()
+            s.removeClient(conn)
             return
         }
-        s.processMessage(conn, messageType, msg)
+        s.processMessage(conn, msg)
     }
 }
 
-func (s *Server) processMessage(conn *websocket.Conn, messageType int, msg []byte) {
-    var chatMessage ChatMessage
-    if err := json.Unmarshal(msg, &chatMessage); err != nil {
-        log.Println("Error unmarshalling JSON:", err)
-        return
-    }
+func (s *Server) processMessage(conn *websocket.Conn, msg []byte) {
+	var chatMessage ChatMessage
+	if err := json.Unmarshal(msg, &chatMessage); err != nil {
+		log.Println("Error unmarshalling JSON:", err)
+		return
+	}
 
-    chatMessage.Type = "message"
-    chatMessage.Timestamp = time.Now()
+	chatMessage.Type = "message"
+	chatMessage.Timestamp = time.Now()
+	s.storeAndBroadcastMessage(chatMessage)
+}
 
-    updatedMsg, err := json.Marshal(chatMessage)
-    if err != nil {
-        log.Println("Error marshalling updated message:", err)
-        return
-    }
+func (s *Server) storeAndBroadcastMessage(chatMessage ChatMessage) {
+	updatedMsg, err := json.Marshal(chatMessage)
+	if err != nil {
+		log.Println("Error marshalling updated message:", err)
+		return
+	}
 
-    err = s.rdb.LPush(s.ctx, "chatHistory", string(updatedMsg)).Err()
-    if err != nil {
-        log.Println("Error saving message to Redis:", err)
-    }
+	if err := s.rdb.LPush(s.ctx, "chatHistory", string(updatedMsg)).Err(); err != nil {
+		log.Println("Error saving message to Redis:", err)
+	}
 
-    s.clientMutex.Lock()
-    for client := range s.clients {
-        if err := client.WriteMessage(messageType, updatedMsg); err != nil {
-            log.Println("Error writing message:", err)
-            delete(s.clients, client)
-            delete(s.usernames, client)
-        }
-    }
-    s.clientMutex.Unlock()
+	s.clientMutex.Lock()
+	defer s.clientMutex.Unlock()
+
+	for client := range s.clients {
+		if err := client.WriteMessage(websocket.TextMessage, updatedMsg); err != nil {
+			log.Println("Error writing message:", err)
+			delete(s.clients, client)
+			delete(s.usernames, client)
+		}
+	}
 }
 
 func (s *Server) broadcastUserList() {
-    s.mutex.Lock()
+    s.clientMutex.Lock()
+    defer s.clientMutex.Unlock()
+
     userList := make([]string, 0, len(s.usernames))
     for _, username := range s.usernames {
         userList = append(userList, username)
     }
-    s.mutex.Unlock()
 
     userListJSON, _ := json.Marshal(map[string]interface{}{"type": "users", "users": userList})
 
-    s.clientMutex.Lock()
-    for client := range s.clients {
-        if err := client.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
-            log.Println("Error writing to client:", err)
+    for client, closeChan := range s.clients {
+        select {
+        case <-closeChan:
+            // Connection is closed, remove it
+            delete(s.clients, client)
+            delete(s.usernames, client)
+        default:
+            if err := client.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
+                log.Println("Error writing to client:", err)
+                delete(s.clients, client)
+                delete(s.usernames, client)
+            }
         }
     }
-    s.clientMutex.Unlock()
 }

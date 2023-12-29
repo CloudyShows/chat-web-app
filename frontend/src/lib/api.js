@@ -1,22 +1,35 @@
-// lib/api.js
-
-/**
- * Fetches the username from the server.
- * The username is retrieved from local storage and sent as a parameter in the request.
- * If the fetch is successful, the username is returned.
- * If the fetch fails, an error is logged to the console.
- *
- * @returns {Promise<string>} A promise that resolves to the username.
- */
 export async function getUsername() {
 	try {
 		const savedUsername = localStorage.getItem('username');
 		const response = await fetch(
 			`http://10.10.0.2:3001/getUsername?username=${encodeURIComponent(savedUsername || '')}`
 		);
+
+		if (!response.ok) {
+			throw new Error('Failed to fetch username from the server.');
+		}
+
 		const data = await response.json();
 		return data.username;
 	} catch (error) {
 		console.error('Error fetching username:', error);
+		throw error;
+	}
+}
+
+export async function changeUsername(oldUsername, newUsername) {
+	try {
+		const response = await fetch(`http://10.10.0.2:3001/changeUsername`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ oldUsername, newUsername })
+		});
+
+		if (!response.ok) {
+			throw new Error('Failed to change username on the server.');
+		}
+	} catch (error) {
+		console.error('Error changing username:', error);
+		throw error;
 	}
 }

@@ -14,7 +14,7 @@ type Server struct {
     upgrader websocket.Upgrader
     rdb      *redis.Client
     ctx      context.Context
-    clients  map[*websocket.Conn]bool
+    clients map[*websocket.Conn]chan struct{}
     usernames map[*websocket.Conn]string
     mutex sync.Mutex
     clientMutex sync.Mutex

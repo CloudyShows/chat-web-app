@@ -1,8 +1,10 @@
+// redis.go
 package main
 
 import (
 	"log"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 )
 
@@ -26,6 +28,13 @@ func (s *Server) sendChatHistory(conn *websocket.Conn) {
 			return
 		}
 	}
+}
+func (s *Server) getUsernameFromRedis(clientIP string) (string, error) {
+    username, err := s.rdb.Get(s.ctx, "username:"+clientIP).Result()
+    if err == redis.Nil {
+        return "User", nil
+    }
+    return username, err
 }
 
 func (s *Server) updateUsernameInRedis(clientIP string, username string) error {
