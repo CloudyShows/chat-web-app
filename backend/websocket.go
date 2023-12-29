@@ -1,7 +1,7 @@
-// websocket.go
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -10,52 +10,44 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func (s *Server) handleNewClient(conn *websocket.Conn, r *http.Request) {
-    closeChan := make(chan struct{})
-    s.registerClient(conn, closeChan)
-
-    // Start a goroutine to handle incoming messages
-    go s.handleIncomingMessages(conn, closeChan)
-
-	log.Println("Client connected:", conn.RemoteAddr())
-	s.sendChatHistory(conn)
-
+func (s *Server) handleNewClient(ctx context.Context, conn *websocket.Conn, r *http.Request) {
 	clientIP := getClientIP(r)
-	username, _ := s.getUsernameFromRedis(clientIP)
-	s.updateClientUsername(clientIP, username)
+	username, _ := s.getUsernameFromRedis(ctx, clientIP)
+
+	s.clientData.mutex.Lock()
+	s.clientData.clients[clientIP] = &ClientInfo{Conn: conn}
+	s.clientData.usernames[conn] = username
+	s.clientData.mutex.Unlock()
+
+	log.Println("Client connected:", clientIP)
+	s.sendChatHistory(ctx, conn)
+	s.updateClientUsername(ctx, conn, r, username)
+	s.broadcastUserList()
+}
+
+func (s *Server) removeClient(conn *websocket.Conn) {
+	s.clientData.mutex.Lock()
+	defer s.clientData.mutex.Unlock()
+
+	delete(s.clientData.clients, conn.RemoteAddr().String())
+	delete(s.clientData.usernames, conn)
 
 	s.broadcastUserList()
 }
 
-func (s *Server) registerClient(conn *websocket.Conn, closeChan chan struct{}) {
-    s.clientMutex.Lock()
-    defer s.clientMutex.Unlock()
-
-    s.clients[conn] = closeChan
-}
-
-func (s *Server) removeClient(conn *websocket.Conn) {
-    s.clientMutex.Lock()
-    defer s.clientMutex.Unlock()
-
-    delete(s.clients, conn)
-    delete(s.usernames, conn)
-
-    s.broadcastUserList()
-}
 
 func (s *Server) handleIncomingMessages(conn *websocket.Conn, closeChan chan struct{}) {
-    defer close(closeChan) // Signal that this connection is closing
+	defer close(closeChan) // Signal that this connection is closing
 
-    for {
-        _, msg, err := conn.ReadMessage()
-        if err != nil {
-            log.Println("Error reading message:", err)
-            s.removeClient(conn)
-            return
-        }
-        s.processMessage(conn, msg)
-    }
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("Error reading message:", err)
+			s.removeClient(conn)
+			return
+		}
+		s.processMessage(conn, msg)
+	}
 }
 
 func (s *Server) processMessage(conn *websocket.Conn, msg []byte) {
@@ -77,45 +69,40 @@ func (s *Server) storeAndBroadcastMessage(chatMessage ChatMessage) {
 		return
 	}
 
-	if err := s.rdb.LPush(s.ctx, "chatHistory", string(updatedMsg)).Err(); err != nil {
+	// Assuming you have a context (ctx) to use with Redis operations
+	ctx := context.Background() // Replace with your actual context
+	if err := s.rdb.LPush(ctx, "chatHistory", string(updatedMsg)).Err(); err != nil {
 		log.Println("Error saving message to Redis:", err)
 	}
 
-	s.clientMutex.Lock()
-	defer s.clientMutex.Unlock()
+	s.clientData.mutex.Lock()
+	defer s.clientData.mutex.Unlock()
 
-	for client := range s.clients {
-		if err := client.WriteMessage(websocket.TextMessage, updatedMsg); err != nil {
+	for _, clientInfo := range s.clientData.clients {
+		if err := clientInfo.Conn.WriteMessage(websocket.TextMessage, updatedMsg); err != nil {
 			log.Println("Error writing message:", err)
-			delete(s.clients, client)
-			delete(s.usernames, client)
+			delete(s.clientData.clients, clientInfo.Conn.RemoteAddr().String())
+			delete(s.clientData.usernames, clientInfo.Conn)
 		}
 	}
 }
 
 func (s *Server) broadcastUserList() {
-    s.clientMutex.Lock()
-    defer s.clientMutex.Unlock()
+	s.clientData.mutex.Lock()
+	defer s.clientData.mutex.Unlock()
 
-    userList := make([]string, 0, len(s.usernames))
-    for _, username := range s.usernames {
-        userList = append(userList, username)
-    }
+	userList := make([]string, 0, len(s.clientData.usernames))
+	for _, username := range s.clientData.usernames {
+		userList = append(userList, username)
+	}
 
-    userListJSON, _ := json.Marshal(map[string]interface{}{"type": "users", "users": userList})
+	userListJSON, _ := json.Marshal(map[string]interface{}{"type": "users", "users": userList})
 
-    for client, closeChan := range s.clients {
-        select {
-        case <-closeChan:
-            // Connection is closed, remove it
-            delete(s.clients, client)
-            delete(s.usernames, client)
-        default:
-            if err := client.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
-                log.Println("Error writing to client:", err)
-                delete(s.clients, client)
-                delete(s.usernames, client)
-            }
-        }
-    }
+	for conn := range s.clientData.usernames {
+		if err := conn.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
+			log.Println("Error writing to client:", err)
+			delete(s.clientData.clients, conn.RemoteAddr().String())
+			delete(s.clientData.usernames, conn)
+		}
+	}
 }
