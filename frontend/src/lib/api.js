@@ -17,19 +17,20 @@ export async function getUsername() {
 	}
 }
 
-export async function changeUsername(oldUsername, newUsername) {
-	try {
-		const response = await fetch(`http://10.10.0.2:3001/changeUsername`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ oldUsername, newUsername })
-		});
+export async function changeUsername(newUsername) {
+    try {
+        const response = await fetch(`http://10.10.0.2:3001/changeUsername`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newUsername })
+        });
 
-		if (!response.ok) {
-			throw new Error('Failed to change username on the server.');
-		}
-	} catch (error) {
-		console.error('Error changing username:', error);
-		throw error;
-	}
+        if (!response.ok) {
+            throw new Error('Failed to change username on the server.');
+        }
+    } catch (error) {
+        console.error('Error changing username:', error);
+        throw error;
+    }
 }
+

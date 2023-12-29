@@ -35,7 +35,6 @@ func (s *Server) removeClient(conn *websocket.Conn) {
 	s.broadcastUserList()
 }
 
-
 func (s *Server) handleIncomingMessages(conn *websocket.Conn, closeChan chan struct{}) {
 	defer close(closeChan) // Signal that this connection is closing
 
@@ -98,11 +97,11 @@ func (s *Server) broadcastUserList() {
 
 	userListJSON, _ := json.Marshal(map[string]interface{}{"type": "users", "users": userList})
 
-	for conn := range s.clientData.usernames {
-		if err := conn.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
+	for _, clientInfo := range s.clientData.clients {
+		if err := clientInfo.Conn.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
 			log.Println("Error writing to client:", err)
-			delete(s.clientData.clients, conn.RemoteAddr().String())
-			delete(s.clientData.usernames, conn)
+			delete(s.clientData.clients, clientInfo.Conn.RemoteAddr().String())
+			delete(s.clientData.usernames, clientInfo.Conn)
 		}
 	}
 }

@@ -1,7 +1,7 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
 	import * as api from '$lib/api.js';
-	import { usernameStore, connectedUsersStore } from '$lib/messagesStore.js';
+	import { usernameStore } from '$lib/messagesStore.js';
 
 	export let currentUsername = '';
 	let username = currentUsername;
@@ -19,12 +19,13 @@
 	}
 
 	async function changeUsername() {
-		if (username.trim() !== '') {
+		if (username.trim() !== '' && username.trim() !== currentUsername) {
 			try {
-				await api.changeUsername(currentUsername, username);
+				await api.changeUsername(username);
 
 				// Now the api.js handles most of the logic
 				usernameStore.set(username); // Update Svelte store
+				currentUsername = username; // Update current username
 
 				// Close the modal
 				closeUsernameForm();

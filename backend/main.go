@@ -17,6 +17,10 @@ func main() {
 	http.HandleFunc("/getUsername", func(w http.ResponseWriter, r *http.Request) {
 		server.getUsername(r.Context(), w, r) // Passing context to getUsername
 	})
+	http.HandleFunc("/changeUsername", func(w http.ResponseWriter, r *http.Request) {
+		server.changeUsernameHandler(w, r) // Handling the change username request
+	})
+
 	http.HandleFunc("/clear", func(w http.ResponseWriter, r *http.Request) {
 		server.clearChatHistoryHTTPHandler(r.Context(), w, r) // Passing context to clearChatHistoryHTTPHandler
 	})
