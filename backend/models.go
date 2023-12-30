@@ -30,9 +30,26 @@ type ClientInfo struct {
 	Username string
 }
 
+type HeartbeatMessage struct {
+    Type      string    `json:"type"`
+    Timestamp time.Time `json:"timestamp"`
+}
+
 type ChatMessage struct {
 	Type      string    `json:"type"`
 	Username  string    `json:"username"`
 	Text      string    `json:"text"`
 	Timestamp time.Time `json:"timestamp"`
+}
+
+type ErrorMessage struct {
+    Type      string    `json:"type"`
+    Error     string    `json:"error"`
+    Timestamp time.Time `json:"timestamp"`
+}
+
+type SuccessMessage struct {
+    Type      string    `json:"type"`
+    Message   string    `json:"message"`
+    Timestamp time.Time `json:"timestamp"`
 }

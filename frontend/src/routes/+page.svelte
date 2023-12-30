@@ -102,7 +102,6 @@
 					usernameStore.set(username);
 					hasUsername = true;
 				}
-				await api.getUsername(); // Fetch username
 				state.isLoading = false; // Set loading to false after initialization
 			} catch (error) {
 				state.isError = true;
@@ -112,7 +111,9 @@
 	});
 
 	onDestroy(() => {
+		console.log('Destroying +page');
 		if (browser) {
+			console.log('Disconnecting WebSocket');
 			disconnectWebSocket(); // Disconnect WebSocket connection
 		}
 	});
