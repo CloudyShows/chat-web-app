@@ -20,7 +20,12 @@ func (s *Server) handleNewClient(ctx context.Context, conn *websocket.Conn, r *h
 	}
 
 	s.clientData.mutex.Lock()
-	s.clientData.clients[clientIP] = &ClientInfo{Conn: conn}
+	s.clientData.clients[clientIP] = &ClientInfo{
+		Conn:      conn,
+		Closed:    false, // Set the Closed field to false directly though it's the zero value by default
+		CloseChan: make(chan struct{}),
+		Username:  username,
+	}
 	s.clientData.usernames[conn] = username
 	s.clientData.mutex.Unlock()
 
@@ -30,9 +35,9 @@ func (s *Server) handleNewClient(ctx context.Context, conn *websocket.Conn, r *h
 	s.broadcastUserList(true)
 	// Start handling incoming messages
 	closeChan := make(chan struct{})
-	go s.handleIncomingMessages(conn, closeChan)
 	// Store the closeChan in the client's ClientInfo
 	s.clientData.clients[clientIP].CloseChan = closeChan
+	go s.handleIncomingMessages(conn, closeChan)
 	s.sendSuccessMessage(conn, "Connected to chat server")
 }
 
@@ -49,6 +54,7 @@ func (s *Server) removeClient(conn *websocket.Conn, lock bool) {
 	}
 	// Signal to stop handling incoming messages
 	close(clientInfo.CloseChan)
+	clientInfo.Closed = true // Set the Closed field to true directly
 	delete(s.clientData.clients, clientIP)
 	delete(s.clientData.usernames, conn)
 	log.Printf("Client disconnected: %s\n", clientIP)
@@ -134,6 +140,7 @@ func (s *Server) broadcastUserList(lock bool) {
 		s.clientData.mutex.Lock()
 		defer s.clientData.mutex.Unlock()
 	}
+
 	userListJSON, err := s.prepareUserListJSON()
 	if err != nil {
 		log.Printf("Error preparing user list JSON: %v\n", err)
@@ -141,13 +148,12 @@ func (s *Server) broadcastUserList(lock bool) {
 	}
 
 	for clientIP, clientInfo := range s.clientData.clients {
-		log.Println("Broadcasting user list:", string(userListJSON))
-		if clientInfo.Conn == nil || clientInfo.Conn.CloseHandler() != nil {
+		if clientInfo.Conn == nil || clientInfo.Closed {
 			continue
 		}
 		if err := clientInfo.Conn.WriteMessage(websocket.TextMessage, userListJSON); err != nil {
 			log.Printf("Error writing user list to client %s: %v\n", clientIP, err)
-			s.removeClient(clientInfo.Conn, false)
+			s.removeClient(clientInfo.Conn, false) // This should now set Closed = true
 		}
 	}
 }
@@ -157,7 +163,6 @@ func (s *Server) prepareUserListJSON() ([]byte, error) {
 	for _, username := range s.clientData.usernames {
 		userList = append(userList, username)
 	}
-	log.Println("User list:", userList)
 	return json.Marshal(map[string]interface{}{"type": "users", "users": userList})
 }
 

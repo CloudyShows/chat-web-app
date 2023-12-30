@@ -26,10 +26,11 @@ type Server struct {
 
 type ClientInfo struct {
 	Conn     *websocket.Conn
-	Closed   *bool
+	Closed   bool
 	Username string
 	CloseChan chan struct{}
 }
+
 
 type ChatMessage struct {
 	Type      string    `json:"type"`
