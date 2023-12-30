@@ -1,9 +1,10 @@
 <!-- +page.svelte -->
 <script>
-	import * as api from '$lib/api.js';
+	// Components
+	import UsernameModal from '$lib/UsernameModal.svelte';
+
+	// Stores
 	import { darkMode } from '$lib/stores.js';
-	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
 	import {
 		initializeWebSocket,
 		disconnectWebSocket,
@@ -12,6 +13,9 @@
 		connectedUsersStore,
 		sendMessage
 	} from '$lib/messagesStore.js';
+	import * as api from '$lib/api.js';
+	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
 
 	// Variables
 	let state = {
@@ -25,6 +29,17 @@
 	let hasUsername = false;
 	let showUsernameForm = false;
 
+	// Stores
+
+	// Subscribe to the usernameStore to get the username
+	usernameStore.subscribe((value) => {
+		username = value;
+	});
+
+	connectedUsersStore.subscribe((value) => {
+		console.log(`Connected users: ${value}`);
+	});
+
 	// Functions
 	function toggleTheme() {
 		darkMode.update((value) => {
@@ -35,21 +50,16 @@
 		});
 	}
 
+	function closeModal() {
+		showUsernameForm = false;
+	}
+
 	function setUsername() {
 		if (username.trim() !== '') {
 			localStorage.setItem('username', username); // Save to local storage
 			usernameStore.set(username);
 			api.getUsername(); // Update the backend
 			hasUsername = true;
-		}
-	}
-
-	function changeUsername() {
-		if (username.trim() !== '') {
-			localStorage.setItem('username', username); // Save to local storage
-			usernameStore.set(username);
-			api.getUsername(); // Update the backend
-			showUsernameForm = false; // Hide the username form
 		}
 	}
 
@@ -96,7 +106,6 @@
 					usernameStore.set(username);
 					hasUsername = true;
 				}
-				await api.getUsername(); // Fetch username
 				state.isLoading = false; // Set loading to false after initialization
 			} catch (error) {
 				state.isError = true;
@@ -106,8 +115,10 @@
 	});
 
 	onDestroy(() => {
+		console.log('Destroying +page');
 		if (browser) {
-			disconnectWebSocket(); // Disconnect WebSocket connection
+			console.log('Disconnecting WebSocket');
+			// disconnectWebSocket(); // Disconnect WebSocket connection
 		}
 	});
 </script>
@@ -201,21 +212,7 @@
 			</div>
 		</div>
 		{#if showUsernameForm}
-			<!-- Username form overlay -->
-			<div class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4">
-				<div class="bg-white p-4 rounded-md">
-					<input
-						class="p-2 w-full rounded-md border bg-gray-100 focus:outline-none focus:border-blue-300 mb-2"
-						type="text"
-						placeholder="New username..."
-						bind:value={username} />
-					<button
-						class="transition-colors duration-200 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
-						on:click={changeUsername}>
-						Update
-					</button>
-				</div>
-			</div>
+			<UsernameModal on:close={closeModal} />
 		{/if}
 	{:else}
 		<!-- Username input -->

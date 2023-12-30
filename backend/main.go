@@ -9,18 +9,28 @@ import (
 )
 
 func main() {
-    server := NewServer()
+	server := NewServer()
 
-    http.HandleFunc("/ws", server.handler)
-    http.HandleFunc("/getUsername", server.getUsername)
-    http.HandleFunc("/clear", server.clearChatHistoryHTTPHandler)
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		server.handler(w, r) // This will pass the context internally
+	})
+	http.HandleFunc("/getUsername", func(w http.ResponseWriter, r *http.Request) {
+		server.getUsername(r.Context(), w, r) // Passing context to getUsername
+	})
+	http.HandleFunc("/changeUsername", func(w http.ResponseWriter, r *http.Request) {
+		server.changeUsernameHandler(w, r) // Handling the change username request
+	})
 
-    corsHandler := handlers.CORS(
-        handlers.AllowedOrigins([]string{"*"}),
-        handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
-        handlers.AllowedHeaders([]string{"Content-Type"}),
-    )
+	http.HandleFunc("/clear", func(w http.ResponseWriter, r *http.Request) {
+		server.clearChatHistoryHTTPHandler(r.Context(), w, r) // Passing context to clearChatHistoryHTTPHandler
+	})
 
-    log.Println("Starting server on port 3001...")
-    log.Fatal(http.ListenAndServe(":3001", corsHandler(http.DefaultServeMux)))
+	corsHandler := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"}),
+		handlers.AllowedHeaders([]string{"Content-Type"}),
+	)
+
+	log.Println("Starting server on port 3001...")
+	log.Fatal(http.ListenAndServe(":3001", corsHandler(http.DefaultServeMux)))
 }

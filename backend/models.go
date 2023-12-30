@@ -2,7 +2,6 @@
 package main
 
 import (
-	"context"
 	"sync"
 	"time"
 
@@ -11,19 +10,43 @@ import (
 )
 
 type Server struct {
-    upgrader websocket.Upgrader
-    rdb      *redis.Client
-    ctx      context.Context
-    clients  map[*websocket.Conn]bool
-    usernames map[*websocket.Conn]string
-    mutex sync.Mutex
-    clientMutex sync.Mutex
+	upgrader websocket.Upgrader
+	rdb      *redis.Client
+
+	clientData struct {
+		mutex     sync.Mutex
+		clients   map[string]*ClientInfo
+		usernames map[*websocket.Conn]string
+	}
+
+	chatData struct {
+		mutex sync.Mutex
+	}
 }
 
-type ChatMessage struct {
-	Type     string `json:"type"`
-	Username string `json:"username"`
-	Text     string `json:"text"`
-	Timestamp time.Time `json:"timestamp"`
+type ClientInfo struct {
+	Conn     *websocket.Conn
+	Closed   bool
+	Username string
+	CloseChan chan struct{}
+}
 
+
+type ChatMessage struct {
+	Type      string    `json:"type"`
+	Username  string    `json:"username"`
+	Text      string    `json:"text"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type ErrorMessage struct {
+    Type      string    `json:"type"`
+    Error     string    `json:"error"`
+    Timestamp time.Time `json:"timestamp"`
+}
+
+type SuccessMessage struct {
+    Type      string    `json:"type"`
+    Message   string    `json:"message"`
+    Timestamp time.Time `json:"timestamp"`
 }
