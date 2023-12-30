@@ -42,8 +42,13 @@ func (s *Server) removeClient(conn *websocket.Conn, lock bool) {
 		defer s.clientData.mutex.Unlock()
 	}
 	clientIP := getClientIP(conn)
+	clientInfo, ok := s.clientData.clients[clientIP]
+	if !ok {
+		log.Printf("Client %s not found\n", clientIP)
+		return
+	}
 	// Signal to stop handling incoming messages
-	close(s.clientData.clients[clientIP].CloseChan)
+	close(clientInfo.CloseChan)
 	delete(s.clientData.clients, clientIP)
 	delete(s.clientData.usernames, conn)
 	log.Printf("Client disconnected: %s\n", clientIP)
@@ -53,23 +58,23 @@ func (s *Server) removeClient(conn *websocket.Conn, lock bool) {
 }
 
 func (s *Server) handleIncomingMessages(conn *websocket.Conn, closeChan chan struct{}) {
-    defer s.removeClient(conn, true) // Ensure the lock is used when removing the client
+	defer s.removeClient(conn, true) // Ensure the lock is used when removing the client
 
-    for {
-        select {
-        case <-closeChan:
-            return
-        default:
-            _, msg, err := conn.ReadMessage()
-            if err != nil {
-                if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-                    log.Printf("Error reading message: %v\n", err)
-                }
-                return
-            }
-            go s.processMessage(conn, msg) // Process each message in a separate goroutine
-        }
-    }
+	for {
+		select {
+		case <-closeChan:
+			return
+		default:
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					log.Printf("Error reading message: %v\n", err)
+				}
+				return
+			}
+			go s.processMessage(conn, msg) // Process each message in a separate goroutine
+		}
+	}
 }
 
 func (s *Server) processMessage(conn *websocket.Conn, msg []byte) {
@@ -81,15 +86,16 @@ func (s *Server) processMessage(conn *websocket.Conn, msg []byte) {
 		return
 	}
 
-	if chatMessage.Type == "heartbeat" {
-		s.sendHeartbeat(conn)
-		return
-	}
-
-	chatMessage.Type = "message"
-	chatMessage.Timestamp = time.Now()
-	if err := s.storeAndBroadcastMessage(conn, chatMessage); err != nil {
-		s.sendErrorMessage(conn, "Error storing and broadcasting message")
+	switch chatMessage.Type {
+	case "message":
+		chatMessage.Timestamp = time.Now()
+		log.Printf("Message received: %s\n", string(msg))
+		if err := s.storeAndBroadcastMessage(conn, chatMessage); err != nil {
+			s.sendErrorMessage(conn, "Error storing and broadcasting message")
+		}
+	// Add cases for other message types here
+	default:
+		log.Printf("Unknown message type: %s\n", chatMessage.Type)
 	}
 }
 
@@ -106,6 +112,7 @@ func (s *Server) storeAndBroadcastMessage(conn *websocket.Conn, chatMessage Chat
 		return err
 	}
 
+	log.Printf("Message stored: %s\n", string(updatedMsg))
 	s.broadcastMessage(updatedMsg)
 	return nil
 }
@@ -134,6 +141,7 @@ func (s *Server) broadcastUserList(lock bool) {
 	}
 
 	for clientIP, clientInfo := range s.clientData.clients {
+		log.Println("Broadcasting user list:", string(userListJSON))
 		if clientInfo.Conn == nil || clientInfo.Conn.CloseHandler() != nil {
 			continue
 		}
@@ -149,22 +157,8 @@ func (s *Server) prepareUserListJSON() ([]byte, error) {
 	for _, username := range s.clientData.usernames {
 		userList = append(userList, username)
 	}
+	log.Println("User list:", userList)
 	return json.Marshal(map[string]interface{}{"type": "users", "users": userList})
-}
-
-func (s *Server) sendHeartbeat(conn *websocket.Conn) {
-	heartbeatMessage := HeartbeatMessage{
-		Type:      "heartbeat",
-		Timestamp: time.Now(),
-	}
-	heartbeatMsg, err := json.Marshal(heartbeatMessage)
-	if err != nil {
-		log.Printf("Error marshalling heartbeat message: %v\n", err)
-		return
-	}
-	if err := conn.WriteMessage(websocket.TextMessage, heartbeatMsg); err != nil {
-		log.Printf("Error sending heartbeat message to client: %v\n", err)
-	}
 }
 
 func (s *Server) sendErrorMessage(conn *websocket.Conn, message string) {

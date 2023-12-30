@@ -30,10 +30,14 @@
 	let showUsernameForm = false;
 
 	// Stores
-	
-	// Subscribe to the usernameStore
+
+	// Subscribe to the usernameStore to get the username
 	usernameStore.subscribe((value) => {
 		username = value;
+	});
+
+	connectedUsersStore.subscribe((value) => {
+		console.log(`Connected users: ${value}`);
 	});
 
 	// Functions

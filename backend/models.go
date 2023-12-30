@@ -31,11 +31,6 @@ type ClientInfo struct {
 	CloseChan chan struct{}
 }
 
-type HeartbeatMessage struct {
-    Type      string    `json:"type"`
-    Timestamp time.Time `json:"timestamp"`
-}
-
 type ChatMessage struct {
 	Type      string    `json:"type"`
 	Username  string    `json:"username"`
