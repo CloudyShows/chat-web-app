@@ -18,7 +18,7 @@ export function initializeWebSocket(attempt = 0) {
 }
 
 function handleWebSocketOpen(event) {
-	console.log('WebSocket opened:', event);
+	// console.log('WebSocket opened:', event);
 	api.getUsername().then((username) => {
 		if (username) {
 			usernameStore.set(username);
@@ -34,9 +34,9 @@ function handleWebSocketOpen(event) {
 
 function handleWebSocketClose(attempt = 0) {
 	console.warn('WebSocket closed:', event);
-	// if (attempt < 3) {
-	// 	setTimeout(() => initializeWebSocket(attempt + 1), 1000 * (attempt + 1)); // exponential backoff
-	// }
+	if (attempt < 3) {
+		setTimeout(() => initializeWebSocket(attempt + 1), 1000 * (attempt + 1)); // exponential backoff
+	}
 }
 
 function handleWebSocketError(event) {
@@ -45,11 +45,11 @@ function handleWebSocketError(event) {
 
 function handleWebSocketMessage(event) {
 	const data = event.data;
-	console.log('Received data:', data);
 
 	if (typeof data === 'string') {
 		try {
 			const message = JSON.parse(data);
+			// console.log('Received message object:', message);
 
 			switch (message.type) {
 				case 'users':
@@ -65,7 +65,7 @@ function handleWebSocketMessage(event) {
 					console.log('Server success:', message.message);
 					break;
 				case 'heartbeat':
-					console.info('Received heartbeat:', message);
+					// console.info('Received heartbeat:', message);
 					break;
 				default:
 					console.warn('Unhandled message type:', message.type);

@@ -28,6 +28,7 @@ type ClientInfo struct {
 	Conn     *websocket.Conn
 	Closed   *bool
 	Username string
+	CloseChan chan struct{}
 }
 
 type HeartbeatMessage struct {

@@ -114,7 +114,7 @@
 		console.log('Destroying +page');
 		if (browser) {
 			console.log('Disconnecting WebSocket');
-			disconnectWebSocket(); // Disconnect WebSocket connection
+			// disconnectWebSocket(); // Disconnect WebSocket connection
 		}
 	});
 </script>

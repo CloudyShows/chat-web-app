@@ -19,13 +19,13 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to upgrade to WebSocket", http.StatusInternalServerError)
 		return
 	}
-	defer conn.Close()
+	// defer conn.Close()
 
 	s.handleNewClient(ctx, conn, r)
 }
 
 func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-    log.Println("/getUsername API called")
+    // log.Println("/getUsername API called")
 	clientIP := getClientIP(r)
 	username, err := s.getUsernameFromRedis(ctx, clientIP)
 	if err != nil {
@@ -46,9 +46,9 @@ func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http
 	}
 
 	s.updateClientUsername(r, username)
-	s.broadcastUserList()
+	s.broadcastUserList(true)
 
-	log.Println("Sending username to client:", username)
+	// log.Println("Sending username to client:", username)
 	json.NewEncoder(w).Encode(map[string]string{"username": username})
 }
 
@@ -64,7 +64,7 @@ func (s *Server) updateClientUsername(r *http.Request, username string) {
 		log.Printf("No client found for connection: %s", clientIP)
 	}
 
-	log.Printf("Username %s set for connection: %s", username, clientIP)
+	// log.Printf("Username %s set for connection: %s", username, clientIP)
 }
 
 func (s *Server) changeUsernameHandler(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +96,7 @@ func (s *Server) changeUsernameHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Update the username in the server's clientData
 	s.updateClientUsername(r, reqBody.NewUsername)
-	s.broadcastUserList()
+	s.broadcastUserList(true)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Username updated successfully"})

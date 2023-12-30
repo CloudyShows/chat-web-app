@@ -28,6 +28,11 @@ func (s *Server) handleNewClient(ctx context.Context, conn *websocket.Conn, r *h
 	s.sendChatHistory(ctx, conn)
 	s.updateClientUsername(r, username)
 	s.broadcastUserList(true)
+	// Start handling incoming messages
+	closeChan := make(chan struct{})
+	go s.handleIncomingMessages(conn, closeChan)
+	// Store the closeChan in the client's ClientInfo
+	s.clientData.clients[clientIP].CloseChan = closeChan
 	s.sendSuccessMessage(conn, "Connected to chat server")
 }
 
@@ -37,6 +42,8 @@ func (s *Server) removeClient(conn *websocket.Conn, lock bool) {
 		defer s.clientData.mutex.Unlock()
 	}
 	clientIP := getClientIP(conn)
+	// Signal to stop handling incoming messages
+	close(s.clientData.clients[clientIP].CloseChan)
 	delete(s.clientData.clients, clientIP)
 	delete(s.clientData.usernames, conn)
 	log.Printf("Client disconnected: %s\n", clientIP)
@@ -46,24 +53,27 @@ func (s *Server) removeClient(conn *websocket.Conn, lock bool) {
 }
 
 func (s *Server) handleIncomingMessages(conn *websocket.Conn, closeChan chan struct{}) {
-    defer close(closeChan)
     defer s.removeClient(conn, true) // Ensure the lock is used when removing the client
 
     for {
-        _, msg, err := conn.ReadMessage()
-        if err != nil {
-            if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-                log.Printf("Error reading message: %v\n", err)
+        select {
+        case <-closeChan:
+            return
+        default:
+            _, msg, err := conn.ReadMessage()
+            if err != nil {
+                if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+                    log.Printf("Error reading message: %v\n", err)
+                }
+                return
             }
-            break
+            go s.processMessage(conn, msg) // Process each message in a separate goroutine
         }
-        go s.processMessage(conn, msg) // Process each message in a separate goroutine
     }
 }
 
 func (s *Server) processMessage(conn *websocket.Conn, msg []byte) {
-	log.Printf("Message received: %s\n", string(msg))
-	log.Printf("Message type: %T\n", msg)
+	// log.Printf("Message received: %s\n", string(msg))
 	var chatMessage ChatMessage
 	if err := json.Unmarshal(msg, &chatMessage); err != nil {
 		log.Printf("Error unmarshalling JSON: %v\n", err)
