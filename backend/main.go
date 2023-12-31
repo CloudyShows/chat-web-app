@@ -21,8 +21,12 @@ func main() {
 		server.changeUsernameHandler(w, r) // Handling the change username request
 	})
 
-	http.HandleFunc("/clear", func(w http.ResponseWriter, r *http.Request) {
-		server.clearChatHistoryHTTPHandler(r.Context(), w, r) // Passing context to clearChatHistoryHTTPHandler
+	http.HandleFunc("/clearHistory", func(w http.ResponseWriter, r *http.Request) {
+		server.clearChatHistoryHTTPHandler(r.Context(), w, r)
+	})
+
+	http.HandleFunc("/clearAll", func(w http.ResponseWriter, r *http.Request) {
+		server.clearAllHTTPHandler(r.Context(), w, r)
 	})
 
 	corsHandler := handlers.CORS(

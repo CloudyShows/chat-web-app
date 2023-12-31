@@ -56,8 +56,38 @@ func (s *Server) updateUsernameInRedis(ctx context.Context, clientIP string, use
 }
 
 func (s *Server) clearChatHistory(ctx context.Context) {
-    err := s.rdb.Del(ctx, "chatHistory").Err()
-    if err != nil {
-        log.Println("Error clearing chat history:", err)
-    }
+	err := s.rdb.Del(ctx, "chatHistory").Err()
+	if err != nil {
+		log.Println("Error clearing chat history:", err)
+	}
 }
+
+func (s *Server) clearAllUsers(ctx context.Context) error {
+    // Find all keys that match the user pattern
+    keys, err := s.rdb.Keys(ctx, "username:*").Result()
+    if err != nil {
+        log.Printf("Error finding user keys in Redis: %s", err)
+        return err
+    }
+
+    // Use Redis pipelining to delete all keys efficiently
+    pipe := s.rdb.Pipeline()
+    for _, key := range keys {
+        pipe.Del(ctx, key)
+    }
+    _, err = pipe.Exec(ctx)
+    if err != nil {
+        log.Printf("Error clearing all user keys in Redis: %s", err)
+        return err
+    }
+
+    // Reset any in-memory data structures if necessary
+    s.clientData.mutex.Lock()
+    defer s.clientData.mutex.Unlock()
+
+    s.clientData.clients = make(map[string]*ClientInfo)
+    s.clientData.usernames = make(map[*websocket.Conn]string)
+
+    return nil
+}
+

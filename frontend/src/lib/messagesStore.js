@@ -39,15 +39,15 @@ function handleWebSocketError(event) {
 
 function handleWebSocketMessage(event) {
     const data = event.data;
-    console.log('Received message:', data);
+    // console.log('Received message:', data);
     if (typeof data === 'string') {
         try {
             const message = JSON.parse(data);
-            console.log('Received message object:', message);
+            // console.log('Received message object:', message);
 
             switch (message.type) {
                 case 'users':
-                    console.info('Received users:', message.users);
+                    // console.info('Received users:', message.users);
                     connectedUsersStore.set(message.users);
                     break;
                 case 'message':
@@ -57,7 +57,7 @@ function handleWebSocketMessage(event) {
                     console.error('Server error:', message.error);
                     break;
                 case 'success':
-                    console.log('Server success:', message.message);
+                    // console.log('Server success:', message.message);
                     break;
                 default:
                     console.warn('Unhandled message type:', message.type);

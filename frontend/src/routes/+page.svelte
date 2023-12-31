@@ -36,10 +36,6 @@
 		username = value;
 	});
 
-	connectedUsersStore.subscribe((value) => {
-		console.log(`Connected users: ${value}`);
-	});
-
 	// Functions
 	function toggleTheme() {
 		darkMode.update((value) => {
@@ -115,10 +111,9 @@
 	});
 
 	onDestroy(() => {
-		console.log('Destroying +page');
 		if (browser) {
-			console.log('Disconnecting WebSocket');
-			// disconnectWebSocket(); // Disconnect WebSocket connection
+			// console.log('Disconnecting WebSocket');
+			disconnectWebSocket(); // Disconnect WebSocket connection
 		}
 	});
 </script>
@@ -138,7 +133,7 @@
 					d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
 			</svg>
 		</div>
-	{:else if hasUsername}
+	{:else if hasUsername && username !== 'User'}
 		<!-- Connected Users List -->
 		<div class="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
 			<div class="flex justify-between items-center">
@@ -196,21 +191,22 @@
 			</div>
 		</div>
 		<!-- Message input -->
-		<div class="p-6 bg-gray-50 dark:bg-gray-800">
+		<div class="p-4 sm:p-6 bg-gray-50 dark:bg-gray-800">
 			<div class="relative flex items-center">
 				<input
-					class="flex-grow p-4 rounded-full border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
+					class="flex-grow p-3 sm:p-4 rounded-full border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-400"
 					type="text"
 					placeholder="Type a message..."
 					bind:value={newMessage}
 					on:keyup={(e) => e.key === 'Enter' && handleSend()} />
 				<button
-					class="absolute right-4 px-6 py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 active:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400"
+					class="absolute right-2 sm:right-4 px-4 sm:px-6 py-2 sm:py-3 bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 active:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400"
 					on:click={handleSend}>
 					Send
 				</button>
 			</div>
 		</div>
+
 		{#if showUsernameForm}
 			<UsernameModal on:close={closeModal} />
 		{/if}

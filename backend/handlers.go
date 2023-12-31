@@ -107,6 +107,12 @@ func (s *Server) clearChatHistoryHTTPHandler(ctx context.Context, w http.Respons
 	w.Write([]byte("Chat history cleared."))
 }
 
+func (s *Server) clearAllHTTPHandler(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	s.clearChatHistory(ctx)
+	s.clearAllUsers(ctx)
+	w.Write([]byte("Removed all users and history"))
+}
+
 func getClientIP(i interface{}) string {
 	var addr string
 
