@@ -1,10 +1,6 @@
-// messagesStore.js
-import { writable } from 'svelte/store';
+// websocket.js
 import * as api from '$lib/api.js';
-
-export const messagesStore = writable([]);
-export const usernameStore = writable('');
-export const connectedUsersStore = writable([]);
+import { connectedUsersStore, messagesStore, usernameStore } from '$lib/stores.js';
 
 let ws;
 

@@ -1,7 +1,8 @@
 <script>
+	//UsernameInput.svelte
 	import { createEventDispatcher } from 'svelte';
 	import * as api from '$lib/api.js';
-	import { usernameStore } from '$lib/messagesStore.js';
+	import { usernameStore } from '$lib/stores.js';
 
 	export let currentUsername = '';
 	let username = currentUsername;
@@ -23,7 +24,6 @@
 			try {
 				await api.changeUsername(username);
 
-				// Now the api.js handles most of the logic
 				usernameStore.set(username); // Update Svelte store
 				currentUsername = username; // Update current username
 

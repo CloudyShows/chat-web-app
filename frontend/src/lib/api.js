@@ -1,36 +1,29 @@
+// api.js
+import axios from 'axios';
+
 export async function getUsername() {
-	try {
-		const savedUsername = localStorage.getItem('username');
-		const response = await fetch(
-			`http://10.10.0.2:3001/getUsername?username=${encodeURIComponent(savedUsername || '')}`
-		);
+    try {
+        const savedUsername = localStorage.getItem('username');
+        const response = await axios.get(
+            `http://10.10.0.2:3001/getUsername?username=${encodeURIComponent(savedUsername || '')}`
+        );
 
-		if (!response.ok) {
-			throw new Error('Failed to fetch username from the server.');
-		}
-
-		const data = await response.json();
-		return data.username;
-	} catch (error) {
-		console.error('Error fetching username:', error);
-		throw error;
-	}
+        return response.data.username;
+    } catch (error) {
+        console.error('Error fetching username:', error);
+        throw error;
+    }
 }
 
 export async function changeUsername(newUsername) {
     try {
-        const response = await fetch(`http://10.10.0.2:3001/changeUsername`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ newUsername })
+        await axios.post(`http://10.10.0.2:3001/changeUsername`, {
+            newUsername
+        }, {
+            headers: { 'Content-Type': 'application/json' }
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to change username on the server.');
-        }
     } catch (error) {
         console.error('Error changing username:', error);
         throw error;
     }
 }
-
