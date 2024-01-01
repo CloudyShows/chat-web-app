@@ -1,6 +1,8 @@
 // messagesStore.js
-import { writable } from 'svelte/store';
+import { SERVER_IP } from './constants';
 import * as api from '$lib/api.js';
+import { writable } from 'svelte/store';
+
 
 export const messagesStore = writable([]);
 export const usernameStore = writable('');
@@ -9,7 +11,7 @@ export const connectedUsersStore = writable([]);
 let ws;
 
 export function initializeWebSocket(attempt = 0) {
-	ws = new WebSocket('ws://10.10.0.2:3001/ws');
+	ws = new WebSocket(`ws://${SERVER_IP}/ws`);
 
 	ws.addEventListener('open', handleWebSocketOpen);
 	ws.addEventListener('close', () => handleWebSocketClose(attempt));
@@ -18,7 +20,7 @@ export function initializeWebSocket(attempt = 0) {
 }
 
 function handleWebSocketOpen(event) {
-	// console.log('WebSocket opened:', event);
+	console.log('WebSocket opened:', event);
 	api.getUsername().then((username) => {
 		if (username) {
 			usernameStore.set(username);
@@ -39,7 +41,7 @@ function handleWebSocketError(event) {
 
 function handleWebSocketMessage(event) {
     const data = event.data;
-    // console.log('Received message:', data);
+    console.log('Received message:', data);
     if (typeof data === 'string') {
         try {
             const message = JSON.parse(data);
@@ -47,7 +49,7 @@ function handleWebSocketMessage(event) {
 
             switch (message.type) {
                 case 'users':
-                    // console.info('Received users:', message.users);
+                    console.info('Received users:', message.users);
                     connectedUsersStore.set(message.users);
                     break;
                 case 'message':
@@ -57,7 +59,7 @@ function handleWebSocketMessage(event) {
                     console.error('Server error:', message.error);
                     break;
                 case 'success':
-                    // console.log('Server success:', message.message);
+                    console.log('Server success:', message.message);
                     break;
                 default:
                     console.warn('Unhandled message type:', message.type);

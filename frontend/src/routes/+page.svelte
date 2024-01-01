@@ -83,8 +83,10 @@
 	onMount(async () => {
 		if (browser) {
 			try {
+				console.log('Initializing WebSocket')
 				// Initialize WebSocket connection
 				await initializeWebSocket();
+				console.log('WebSocket initialized')
 
 				// Initialize dark mode from localStorage
 				const savedTheme = localStorage.getItem('theme');
@@ -104,6 +106,7 @@
 				}
 				state.isLoading = false; // Set loading to false after initialization
 			} catch (error) {
+				console.log(error);
 				state.isError = true;
 				state.errorMessage = error.message;
 			}

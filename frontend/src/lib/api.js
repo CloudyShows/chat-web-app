@@ -1,8 +1,11 @@
+import { SERVER_IP } from '$lib/constants';
+
+
 export async function getUsername() {
 	try {
 		const savedUsername = localStorage.getItem('username');
 		const response = await fetch(
-			`http://10.10.0.2:3001/getUsername?username=${encodeURIComponent(savedUsername || '')}`
+			`http://${SERVER_IP}/getUsername?username=${encodeURIComponent(savedUsername || '')}`
 		);
 
 		if (!response.ok) {
@@ -19,7 +22,7 @@ export async function getUsername() {
 
 export async function changeUsername(newUsername) {
     try {
-        const response = await fetch(`http://10.10.0.2:3001/changeUsername`, {
+        const response = await fetch(`http://${SERVER_IP}/changeUsername`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ newUsername })
