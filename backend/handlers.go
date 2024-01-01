@@ -3,6 +3,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net"
@@ -19,13 +21,11 @@ func (s *Server) handler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to upgrade to WebSocket", http.StatusInternalServerError)
 		return
 	}
-	// defer conn.Close()
 
 	s.handleNewClient(ctx, conn, r)
 }
 
 func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-    // log.Println("/getUsername API called")
 	clientIP := getClientIP(r)
 	username, err := s.getUsernameFromRedis(ctx, clientIP)
 	if err != nil {
@@ -34,9 +34,9 @@ func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http
 		return
 	}
 
-	clientSentUsername := r.URL.Query().Get("username")
-	if clientSentUsername != "" {
-		username = clientSentUsername
+	// If username doesn't exist, generate a new one
+	if username == "" {
+		username = generateRandomUsername()
 		err = s.updateUsernameInRedis(ctx, clientIP, username)
 		if err != nil {
 			log.Println("Error updating username in Redis:", err)
@@ -48,8 +48,14 @@ func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http
 	s.updateClientUsername(r, username)
 	s.broadcastUserList(true)
 
-	// log.Println("Sending username to client:", username)
 	json.NewEncoder(w).Encode(map[string]string{"username": username})
+}
+
+// generateRandomUsername generates a random username
+func generateRandomUsername() string {
+	b := make([]byte, 1) // 1 bytes = 8 bits
+	rand.Read(b)
+	return hex.EncodeToString(b)
 }
 
 func (s *Server) updateClientUsername(r *http.Request, username string) {

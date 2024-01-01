@@ -1,11 +1,12 @@
 // websocket.js
 import * as api from '$lib/api.js';
+import { SERVER_IP } from '$lib/constants';
 import { connectedUsersStore, messagesStore, usernameStore } from '$lib/stores.js';
 
 let ws;
 
 export function initializeWebSocket(attempt = 0) {
-	ws = new WebSocket('ws://10.10.0.2:3001/ws');
+	ws = new WebSocket(`ws://${SERVER_IP}/ws`);
 
 	ws.addEventListener('open', handleWebSocketOpen);
 	ws.addEventListener('close', () => handleWebSocketClose(attempt));
@@ -14,12 +15,14 @@ export function initializeWebSocket(attempt = 0) {
 }
 
 function handleWebSocketOpen(event) {
-	// console.log('WebSocket opened:', event);
-	api.getUsername().then((username) => {
-		if (username) {
-			usernameStore.set(username);
-		}
-	});
+    // Fetch the username from the backend when the WebSocket connection is opened
+    api.getUsername().then((username) => {
+        if (username) {
+            usernameStore.set(username); // Set the username in the store
+        }
+    }).catch((error) => {
+        console.error('Error fetching username:', error);
+    });
 }
 
 function handleWebSocketClose(attempt = 0) {

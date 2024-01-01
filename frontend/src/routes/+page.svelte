@@ -1,60 +1,63 @@
 <!-- +page.svelte -->
 <script>
-	import ChatRoom from '$lib/components/ChatRoom.svelte';
-	import UserList from '$lib/components/UserList.svelte';
-	import MessageInput from '$lib/components/MessageInput.svelte';
-	import UsernameInput from '$lib/components/UsernameInput.svelte';
-	import { darkMode } from '$lib/stores.js';
-	import { initializeWebSocket, disconnectWebSocket } from '$lib/websocket.js';
-	import { getUsername } from '$lib/api.js';
-	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
+    import ChatRoom from '$lib/components/ChatRoom.svelte';
+    import UserList from '$lib/components/UserList.svelte';
+    import MessageInput from '$lib/components/MessageInput.svelte';
+    import UsernameInput from '$lib/components/UsernameInput.svelte';
+    import { darkMode, usernameStore } from '$lib/stores.js';
+    import { initializeWebSocket, disconnectWebSocket } from '$lib/websocket.js';
+    import { onMount, onDestroy } from 'svelte';
+    import { browser } from '$app/environment';
 
-	let state = {
-		isLoading: true,
-		isError: false,
-		errorMessage: 'Error loading chat.'
-	};
+    let state = {
+        isLoading: true,
+        isError: false,
+        errorMessage: 'Error loading chat.'
+    };
 
-	let hasUsername = false;
-	let showUsernameForm = false;
+    let hasUsername = false;
+    let showUsernameForm = false;
 
-	// Subscribe to the dark mode store and update the theme
-	if (browser) {
-		darkMode.subscribe((value) => {
-			const theme = value ? 'light' : 'dark';
-			document.documentElement.classList.toggle('dark', value);
-			localStorage.setItem('theme', theme);
-		});
-	}
+    // Subscribe to the dark mode store and update the theme
+    if (browser) {
+        darkMode.subscribe((value) => {
+            const theme = value ? 'light' : 'dark';
+            document.documentElement.classList.toggle('dark', value);
+            localStorage.setItem('theme', theme);
+        });
+    }
 
-	// Lifecycle hooks
+    // Lifecycle hooks
 	onMount(async () => {
-		if (browser) {
-			try {
-				await initializeWebSocket();
-				const savedTheme = localStorage.getItem('theme');
-				darkMode.set(savedTheme === 'dark');
+    if (browser) {
+        try {
+            await initializeWebSocket();
 
-				const fetchedUsername = await getUsername();
-				if (fetchedUsername) {
-					hasUsername = true;
-				} else {
-					showUsernameForm = true; // Prompt for username if not found
-				}
-				state.isLoading = false;
-			} catch (error) {
-				state.isError = true;
-				state.errorMessage = error.message;
-			}
-		}
-	});
+            // Subscribe to the username store
+            usernameStore.subscribe((value) => {
+                if (value) {
+                    hasUsername = true;
+                } else {
+                    showUsernameForm = true;
+                }
+            });
 
-	onDestroy(() => {
-		if (browser) {
-			disconnectWebSocket();
-		}
-	});
+            const savedTheme = localStorage.getItem('theme');
+            darkMode.set(savedTheme === 'dark');
+            state.isLoading = false;
+        } catch (error) {
+            console.log(error);
+            state.isError = true;
+            state.errorMessage = error.message;
+        }
+    }
+});
+
+    onDestroy(() => {
+        if (browser) {
+            disconnectWebSocket();
+        }
+    });
 </script>
 
 <div class="flex flex-col h-screen bg-white dark:bg-gray-900">

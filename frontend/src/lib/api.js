@@ -1,11 +1,11 @@
 // api.js
 import axios from 'axios';
+import { SERVER_IP } from '$lib/constants';
 
 export async function getUsername() {
     try {
-        const savedUsername = localStorage.getItem('username');
         const response = await axios.get(
-            `http://10.10.0.2:3001/getUsername?username=${encodeURIComponent(savedUsername || '')}`
+            `http://${SERVER_IP}/getUsername`
         );
 
         return response.data.username;
@@ -17,7 +17,7 @@ export async function getUsername() {
 
 export async function changeUsername(newUsername) {
     try {
-        await axios.post(`http://10.10.0.2:3001/changeUsername`, {
+        await axios.post(`http://${SERVER_IP}/changeUsername`, {
             newUsername
         }, {
             headers: { 'Content-Type': 'application/json' }
