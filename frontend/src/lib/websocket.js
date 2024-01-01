@@ -15,14 +15,14 @@ export function initializeWebSocket(attempt = 0) {
 }
 
 function handleWebSocketOpen(event) {
-    // Fetch the username from the backend when the WebSocket connection is opened
-    api.getUsername().then((username) => {
-        if (username) {
-            usernameStore.set(username); // Set the username in the store
-        }
-    }).catch((error) => {
-        console.error('Error fetching username:', error);
-    });
+    // // Fetch the username from the backend when the WebSocket connection is opened
+    // api.getUsername().then((username) => {
+    //     if (username) {
+    //         usernameStore.set(username); // Set the username in the store
+    //     }
+    // }).catch((error) => {
+    //     console.error('Error fetching username:', error);
+    // });
 }
 
 function handleWebSocketClose(attempt = 0) {
