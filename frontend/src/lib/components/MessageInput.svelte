@@ -43,5 +43,17 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
+		background-color: #2c2f33;
+	}
+	.message-input {
+		background-color: #40444b;
+		color: #dcddde;
+	}
+	.send-button {
+		background-color: #5865f2;
+		color: #ffffff;
+	}
+	.send-button:hover {
+		background-color: #4e5dcf;
 	}
 </style>

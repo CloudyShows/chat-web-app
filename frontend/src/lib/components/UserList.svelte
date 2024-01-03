@@ -1,10 +1,10 @@
 <!-- UserList.svelte -->
 <script>
-    import { connectedUsersStore, usernameStore } from '$lib/stores.js';
+	import { connectedUsersStore, usernameStore } from '$lib/stores.js';
 	import Spinner from '$lib/components/Spinner.svelte';
-	
-    $: username = $usernameStore;
-    $: isLoadingUsername = username === ''; // Loading state when username is not fetched yet
+
+	$: username = $usernameStore;
+	$: isLoadingUsername = username === ''; // Loading state when username is not fetched yet
 </script>
 
 {#if isLoadingUsername}
@@ -30,7 +30,7 @@
 
 <style>
 	.user-list {
-		background-color: rgba(255, 255, 255, 0.05); /* Semi-transparent background for the user list */
+		background-color: #2c2f33;
 		border-left: 1px solid rgba(255, 255, 255, 0.1); /* A subtle border to the left */
 	}
 </style>

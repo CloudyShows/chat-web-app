@@ -15,14 +15,16 @@ export function initializeWebSocket(attempt = 0) {
 }
 
 function handleWebSocketOpen(event) {
-    // // Fetch the username from the backend when the WebSocket connection is opened
-    // api.getUsername().then((username) => {
-    //     if (username) {
-    //         usernameStore.set(username); // Set the username in the store
-    //     }
-    // }).catch((error) => {
-    //     console.error('Error fetching username:', error);
-    // });
+	api
+		.getUsername()
+		.then((username) => {
+			if (username) {
+				usernameStore.set(username);
+			}
+		})
+		.catch((error) => {
+			console.error('Error fetching username:', error);
+		});
 }
 
 function handleWebSocketClose(attempt = 0) {
@@ -37,36 +39,36 @@ function handleWebSocketError(event) {
 }
 
 function handleWebSocketMessage(event) {
-    const data = event.data;
-    // console.log('Received message:', data);
-    if (typeof data === 'string') {
-        try {
-            const message = JSON.parse(data);
-            // console.log('Received message object:', message);
+	const data = event.data;
+	// console.log('Received message:', data);
+	if (typeof data === 'string') {
+		try {
+			const message = JSON.parse(data);
+			// console.log('Received message object:', message);
 
-            switch (message.type) {
-                case 'users':
-                    // console.info('Received users:', message.users);
-                    connectedUsersStore.set(message.users);
-                    break;
-                case 'message':
-                    messagesStore.update((messages) => [...messages, message]);
-                    break;
-                case 'error':
-                    console.error('Server error:', message.error);
-                    break;
-                case 'success':
-                    // console.log('Server success:', message.message);
-                    break;
-                default:
-                    console.warn('Unhandled message type:', message.type);
-            }
-        } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
-        }
-    } else {
-        console.warn('Received non-string message:', data);
-    }
+			switch (message.type) {
+				case 'users':
+					// console.info('Received users:', message.users);
+					connectedUsersStore.set(message.users);
+					break;
+				case 'message':
+					messagesStore.update((messages) => [...messages, message]);
+					break;
+				case 'error':
+					console.error('Server error:', message.error);
+					break;
+				case 'success':
+					// console.log('Server success:', message.message);
+					break;
+				default:
+					console.warn('Unhandled message type:', message.type);
+			}
+		} catch (error) {
+			console.error('Error parsing WebSocket message:', error);
+		}
+	} else {
+		console.warn('Received non-string message:', data);
+	}
 }
 
 export function disconnectWebSocket() {

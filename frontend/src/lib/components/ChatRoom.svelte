@@ -7,13 +7,13 @@
 	function shouldStartNewGroup(message, index) {
 		const previousMessage = $messagesStore[index - 1];
 		if (!previousMessage) return true; // First message in the list
-        
+
 		const currentMessageTime = new Date(message.timestamp);
 		const previousMessageTime = new Date(previousMessage.timestamp);
 		const timeDifference = currentMessageTime - previousMessageTime;
 
 		// Start new group if messages are more than 1 minute apart
-        console.log(`Time difference for message at index ${index}: ${timeDifference}`);
+		console.log(`Time difference for message at index ${index}: ${timeDifference}`);
 		return timeDifference > 1 * 60 * 1000;
 	}
 </script>
@@ -43,6 +43,11 @@
 	.chat-room {
 		position: relative;
 		padding-bottom: 70px;
+		background-color: #2c2f33;
+	}
+
+	.header {
+		background-color: #23272a;
 	}
 
 	.message {
@@ -50,12 +55,14 @@
 	}
 	.text-content {
 		word-wrap: break-word;
+		color: #dcddde;
 	}
 	.messages-display-area {
 		flex-grow: 1;
 		overflow-y: auto;
 		margin-bottom: 70px; /* Height of the input area to prevent overlap */
 		max-height: calc(100% - 70px);
+		background-color: #36393f;
 	}
 
 	.message:last-child {

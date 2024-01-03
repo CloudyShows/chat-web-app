@@ -39,9 +39,9 @@
 <div
 	class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 p-4"
 	on:click={handleOverlayClick}>
-	<div class="bg-white dark:bg-gray-800 p-4 rounded-md">
+	<div class="bg-gray-800 p-4 rounded-md">
 		<input
-			class="p-2 w-full rounded-md border bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:border-blue-300 dark:focus:border-blue-500 mb-2"
+			class="p-2 w-full rounded-md border bg-gray-700 border-gray-600 text-white focus:outline-none focus:border-blue-500 mb-2"
 			type="text"
 			placeholder="New username..."
 			bind:value={username} />
