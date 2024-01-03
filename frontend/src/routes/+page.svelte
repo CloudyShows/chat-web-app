@@ -19,6 +19,8 @@
 	let hasUsername = false;
 	let showUsernameForm = false;
 
+	let unsubscribe;
+
 	function toggleUsernameForm() {
 		showUsernameForm = !showUsernameForm;
 	}
@@ -27,15 +29,15 @@
 	onMount(async () => {
 		if (browser) {
 			try {
-				console.log('Initializing websocket...');
 				await initializeWebSocket();
-				console.log('Websocket initialized.');
-				usernameStore.subscribe((value) => {
+
+				unsubscribe = usernameStore.subscribe((value) => {
 					hasUsername = !!value;
 					showUsernameForm = !value;
+					if (hasUsername) {
+						state.isLoading = false;
+					}
 				});
-
-				state.isLoading = false;
 			} catch (error) {
 				console.log(error);
 				state.isError = true;
@@ -45,6 +47,9 @@
 	});
 
 	onDestroy(() => {
+		if (unsubscribe) {
+			unsubscribe();
+		}
 		if (browser) {
 			disconnectWebSocket();
 		}
@@ -61,7 +66,7 @@
 	{:else if state.isError}
 		<p class="text-red-500">{state.errorMessage}</p>
 	{/if}
-	{#if hasUsername}
+	{#if hasUsername && !state.isLoading}
 		<div class="flex h-full">
 			<div class="flex flex-col flex-grow">
 				<ChatRoom />

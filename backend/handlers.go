@@ -36,8 +36,24 @@ func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http
 
 	// If username doesn't exist, generate a new one
 	if username == "" {
-		username = generateRandomUsername()
-		err = s.updateUsernameInRedis(ctx, clientIP, username)
+		for {
+			username = generateRandomUsername()
+			exists, err := s.rdb.Exists(ctx, "username:"+username).Result()
+			if err != nil {
+				log.Println("Error checking username existence in Redis:", err)
+				http.Error(w, "Failed to check username existence", http.StatusInternalServerError)
+				return
+			}
+			if exists == 0 {
+				break // If the username doesn't exist, break the loop
+			}
+			log.Println("Username already exists:", username)
+			// If the username exists, loop again to generate a new one
+		}
+	}
+
+	err = s.updateUsernameInRedis(ctx, clientIP, username)
+	if err != nil {
 		if err != nil {
 			log.Println("Error updating username in Redis:", err)
 			http.Error(w, "Failed to update username", http.StatusInternalServerError)
@@ -53,8 +69,11 @@ func (s *Server) getUsername(ctx context.Context, w http.ResponseWriter, r *http
 
 // generateRandomUsername generates a random username
 func generateRandomUsername() string {
-	b := make([]byte, 1) // 1 bytes = 8 bits
-	rand.Read(b)
+	b := make([]byte, 4) // 4 bytes = 32 bits
+	_, err := rand.Read(b)
+	if err != nil {
+		log.Fatalf("Error generating random username: %v", err)
+	}
 	return hex.EncodeToString(b)
 }
 
